@@ -1,0 +1,177 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #0b0c10;
+    color: #c5c6c7;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 6%;
+    background-color: #1f2833;
+    border-bottom: 2px solid #66fcf1;
+}
+
+.logo {
+    font-size: 26px;
+    font-weight: bold;
+    color: white;
+}
+
+.logo span {
+    color: #66fcf1;
+}
+
+.search-box {
+    display: flex;
+    width: 40%;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 15px;
+    background-color: #0b0c10;
+    border: 1px solid #45f3ff;
+    border-radius: 20px 0 0 20px;
+    color: white;
+    outline: none;
+}
+
+.search-box button {
+    padding: 0 20px;
+    background-color: #66fcf1;
+    color: #0b0c10;
+    border: none;
+    font-weight: bold;
+    border-radius: 0 20px 20px 0;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.search-box button:hover {
+    background-color: #45b6fe;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 30px 6%;
+    gap: 30px;
+}
+
+.content-area {
+    flex: 3;
+    min-width: 300px;
+}
+
+#section-title {
+    margin-bottom: 20px;
+    color: white;
+    border-left: 4px solid #66fcf1;
+    padding-left: 10px;
+}
+
+.anime-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.anime-card {
+    background-color: #1f2833;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.anime-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(102, 252, 241, 0.2);
+}
+
+.anime-card img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+}
+
+.anime-card h4 {
+    padding: 10px;
+    font-size: 14px;
+    color: white;
+    text-align: center;
+}
+
+.add-btn {
+    background-color: #45f3ff;
+    color: #0b0c10;
+    border: none;
+    padding: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #66fcf1;
+}
+
+/* Sidebar Watchlist */
+.watchlist-sidebar {
+    flex: 1;
+    min-width: 250px;
+    background-color: #1f2833;
+    padding: 20px;
+    border-radius: 10px;
+    height: fit-content;
+    border: 1px solid #45f3ff;
+}
+
+.watchlist-sidebar h3 {
+    margin-bottom: 15px;
+    color: white;
+    text-align: center;
+}
+
+#watchlist-items {
+    list-style: none;
+}
+
+#watchlist-items li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #0b0c10;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.remove-btn {
+    background: none;
+    border: none;
+    color: #ff4757;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.loading, .empty-msg {
+    text-align: center;
+    grid-column: 1 / -1;
+    color: #868686;
+    padding: 20px;
+}
+
