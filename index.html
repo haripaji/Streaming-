@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeFun - Track & Discover Anime</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">Anime<span>Fun</span> 🎌</div>
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Search anime (e.g., Naruto, One Piece)...">
+            <button id="search-btn">Search</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="content-area">
+            <h2 id="section-title">🔥 Trending Anime</h2>
+            <div class="anime-grid" id="anime-grid">
+                <p class="loading">Loading trending anime...</p>
+            </div>
+        </section>
+
+        <aside class="watchlist-sidebar">
+            <h3>⭐ My Watchlist</h3>
+            <ul id="watchlist-items">
+                <p class="empty-msg">Your watchlist is empty.</p>
+            </ul>
+        </aside>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
