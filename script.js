@@ -224,3 +224,26 @@ if (toggleWatchlistBtn) {
         }
     });
 }
+const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+
+// 1. '✖' बटन दबाने पर स्लाइडर बंद करें
+if (closeSidebarBtn) {
+    closeSidebarBtn.addEventListener('click', () => {
+        watchlistSidebar.classList.remove('active');
+        toggleWatchlistBtn.innerText = "⭐ Watchlist";
+        toggleWatchlistBtn.style.backgroundColor = "#ff4757";
+    });
+}
+
+// 2. स्लाइडर के बाहर कहीं भी क्लिक करने पर उसे ऑटोमैटिक बंद करें
+document.addEventListener('click', (event) => {
+    // चेक करें कि स्लाइडर खुला है और क्लिक स्लाइडर या टॉगल बटन के बाहर हुआ है
+    if (watchlistSidebar.classList.contains('active') && 
+        !watchlistSidebar.contains(event.target) && 
+        event.target !== toggleWatchlistBtn) {
+        
+        watchlistSidebar.classList.remove('active');
+        toggleWatchlistBtn.innerText = "⭐ Watchlist";
+        toggleWatchlistBtn.style.backgroundColor = "#ff4757";
+    }
+});
