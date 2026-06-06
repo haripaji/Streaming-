@@ -18,13 +18,33 @@
 
     <main class="container">
         
-        <section class="player-section" id="player-section" style="display: none;">
+                <section class="player-section" id="player-section" style="display: none;">
             <div class="video-container">
                 <iframe id="video-player" src="" frameborder="0" allowfullscreen></iframe>
             </div>
-            <h2 id="player-title">Anime Title</h2>
+            
+            <div class="player-controls">
+                <h2 id="player-title">Anime Title</h2>
+                
+                <div class="action-buttons">
+                    <button id="like-btn" class="action-btn">🤍 <span id="like-text">Like</span></button>
+                    <button id="comment-btn" class="action-btn">💬 Comment</button>
+                    <button id="share-btn" class="action-btn">🔗 Share</button>
+                    <button id="download-btn" class="action-btn">⬇️ Download</button>
+                </div>
+            </div>
+
+            <div id="comment-section" class="comment-section" style="display: none;">
+                <div class="comment-input-area">
+                    <input type="text" id="comment-input" placeholder="Write a comment...">
+                    <button id="submit-comment">Post</button>
+                </div>
+                <ul id="comment-list"></ul>
+            </div>
+
             <button id="close-player">✖ Close Player</button>
         </section>
+
 
         <section class="content-area">
             <h2 id="section-title">🔥 Trending Anime</h2>
