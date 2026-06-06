@@ -77,6 +77,103 @@ header {
     border-left: 4px solid #66fcf1;
     padding-left: 10px;
 }
+/* =========================================
+   PLAYER ACTION BUTTONS & COMMENTS
+   ========================================= */
+.player-controls {
+    margin-top: 15px;
+    text-align: left;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.action-buttons::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for mobile swipe */
+}
+
+.action-btn {
+    background-color: #0b0c10;
+    color: #c5c6c7;
+    border: 1px solid #45f3ff;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: 0.3s;
+}
+
+.action-btn:hover {
+    background-color: #1f2833;
+    color: #66fcf1;
+}
+
+.action-btn.liked {
+    background-color: #ff4757;
+    color: white;
+    border-color: #ff4757;
+}
+
+/* Comments Section */
+.comment-section {
+    margin-top: 20px;
+    background-color: #0b0c10;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    text-align: left;
+}
+
+.comment-input-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+#comment-input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    background-color: #1f2833;
+    color: white;
+}
+
+#submit-comment {
+    background-color: #66fcf1;
+    color: #0b0c10;
+    border: none;
+    padding: 0 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#comment-list {
+    list-style: none;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#comment-list li {
+    background-color: #1f2833;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #c5c6c7;
+}
+
 
 .anime-grid {
     display: grid;
