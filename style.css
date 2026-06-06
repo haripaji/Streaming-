@@ -282,3 +282,25 @@ header {
         right: 0; 
     }
 }
+/* Sidebar Close Button */
+.close-sidebar {
+    display: none; /* डेस्कटॉप पर छुपा रहेगा */
+}
+
+@media (max-width: 768px) {
+    .close-sidebar {
+        display: block;
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 24px;
+        color: #ff4757;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    
+    .close-sidebar:hover {
+        color: #ff6b81;
+    }
+}
