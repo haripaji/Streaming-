@@ -234,3 +234,51 @@ header {
 .play-btn:hover {
     background-color: #45b6fe;
 }
+/* Mobile Watchlist Floating Button */
+.mobile-watchlist-btn {
+    display: none; /* डेस्कटॉप पर छुपा रहेगा */
+    position: fixed;
+    bottom: 80px; /* Feedback बटन के थोड़ा ऊपर */
+    right: 20px;
+    background-color: #ff4757;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+/* Mobile Responsive Layout - Sliding Sidebar */
+@media (max-width: 768px) {
+    .container {
+        display: block; /* मोबाइल पर कार्ड्स को सही साइज में रखने के लिए */
+        padding: 20px 4%;
+    }
+
+    .mobile-watchlist-btn {
+        display: block; /* मोबाइल पर बटन दिखाएं */
+    }
+
+    .watchlist-sidebar {
+        position: fixed;
+        top: 0;
+        right: -300px; /* स्क्रीन के बाहर छुपाएं */
+        width: 260px;
+        height: 100vh;
+        z-index: 1005;
+        transition: right 0.3s ease-in-out;
+        overflow-y: auto;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.8);
+        border-radius: 0;
+        border-left: 2px solid #45f3ff;
+    }
+
+    /* जब बटन क्लिक होगा, तो यह क्लास वॉचलिस्ट को स्क्रीन पर ले आएगी */
+    .watchlist-sidebar.active {
+        right: 0; 
+    }
+}
