@@ -124,27 +124,150 @@ function displayWatchlist() {
     });
 }
 
+// ==========================================
+// 5. VIDEO PLAYER & ACTIONS FUNCTIONALITY
+// ==========================================
+const likeBtn = document.getElementById('like-btn');
+const likeText = document.getElementById('like-text');
+const shareBtn = document.getElementById('share-btn');
+const downloadBtn = document.getElementById('download-btn');
+const commentBtn = document.getElementById('comment-btn');
+const commentSection = document.getElementById('comment-section');
+const commentInput = document.getElementById('comment-input');
+const submitComment = document.getElementById('submit-comment');
+const commentList = document.getElementById('comment-list');
 
-// ==========================================
-// 5. VIDEO PLAYER FUNCTIONALITY
-// ==========================================
+let currentVideoTitle = "";
+let currentVideoUrl = "";
+
 window.playVideo = function(url, title) {
     if (url === 'null') {
-        alert("Sorry! No trailer available for this anime.");
+        alert("Sorry! No video available for this.");
         return;
     }
+    
+    currentVideoTitle = title;
+    currentVideoUrl = url;
+    
     playerTitle.innerText = `Playing: ${title}`;
     videoPlayer.src = url; 
     playerSection.style.display = 'block'; 
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    
+    // लोड होते ही चेक करें कि क्या यूज़र ने इसे पहले लाइक किया था
+    checkLikeStatus(title);
+    // इस वीडियो के पुराने कमेंट्स लोड करें
+    loadComments(title);
+    // कमेंट सेक्शन को डिफ़ॉल्ट रूप से बंद रखें
+    commentSection.style.display = 'none';
 }
 
+// Player Close
 if (closePlayerBtn) {
     closePlayerBtn.addEventListener('click', () => {
         playerSection.style.display = 'none';
         videoPlayer.src = ''; 
     });
 }
+
+// --- LIKE BUTTON LOGIC ---
+likeBtn.addEventListener('click', () => {
+    let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
+    
+    if (likesData[currentVideoTitle]) {
+        // Unlike
+        delete likesData[currentVideoTitle];
+        likeBtn.classList.remove('liked');
+        likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
+    } else {
+        // Like
+        likesData[currentVideoTitle] = true;
+        likeBtn.classList.add('liked');
+        likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
+    }
+    localStorage.setItem('animeLikes', JSON.stringify(likesData));
+});
+
+function checkLikeStatus(title) {
+    let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
+    if (likesData[title]) {
+        likeBtn.classList.add('liked');
+        likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
+    } else {
+        likeBtn.classList.remove('liked');
+        likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
+    }
+}
+
+// --- SHARE BUTTON LOGIC (Web Share API) ---
+shareBtn.addEventListener('click', async () => {
+    const shareData = {
+        title: currentVideoTitle,
+        text: `Watch ${currentVideoTitle} on AnimeFun!`,
+        url: window.location.href
+    };
+    try {
+        if (navigator.share) {
+            await navigator.share(shareData);
+        } else {
+            // अगर पीसी पर हैं तो लिंक कॉपी कर लें
+            navigator.clipboard.writeText(window.location.href);
+            alert("Website Link copied to clipboard!");
+        }
+    } catch (err) {
+        console.error("Error sharing:", err);
+    }
+});
+
+// --- DOWNLOAD BUTTON LOGIC ---
+downloadBtn.addEventListener('click', () => {
+    // यूट्यूब वीडियो सीधे डाउनलोड नहीं हो सकते, इसलिए हम लिंक कॉपी कर रहे हैं
+    navigator.clipboard.writeText(currentVideoUrl);
+    alert(`Downloading direct embedded videos is restricted.\n\nThe video link has been copied: ${currentVideoUrl}\nYou can paste it in any downloader tool.`);
+});
+
+// --- COMMENT BUTTON LOGIC ---
+commentBtn.addEventListener('click', () => {
+    if (commentSection.style.display === 'none') {
+        commentSection.style.display = 'block';
+    } else {
+        commentSection.style.display = 'none';
+    }
+});
+
+submitComment.addEventListener('click', () => {
+    const text = commentInput.value.trim();
+    if (text !== "") {
+        let commentsData = JSON.parse(localStorage.getItem('animeComments')) || {};
+        if (!commentsData[currentVideoTitle]) {
+            commentsData[currentVideoTitle] = [];
+        }
+        
+        commentsData[currentVideoTitle].push(text);
+        localStorage.setItem('animeComments', JSON.stringify(commentsData));
+        
+        commentInput.value = "";
+        loadComments(currentVideoTitle);
+    }
+});
+
+function loadComments(title) {
+    commentList.innerHTML = "";
+    let commentsData = JSON.parse(localStorage.getItem('animeComments')) || {};
+    let videoComments = commentsData[title] || [];
+    
+    if (videoComments.length === 0) {
+        commentList.innerHTML = `<li style="text-align:center; color:#868686;">No comments yet. Be the first!</li>`;
+        return;
+    }
+    
+    videoComments.forEach(comment => {
+        let li = document.createElement('li');
+        li.innerHTML = `<strong>Guest:</strong> ${comment}`;
+        commentList.appendChild(li);
+    });
+}
+
 
 
 // ==========================================
