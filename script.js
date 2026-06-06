@@ -1,16 +1,23 @@
 // ==========================================
-// 0. SUPABASE CONNECTION (DATABASE)
+// 0. SUPABASE CONNECTION (SAFE MODE)
 // ==========================================
 const supabaseUrl = 'https://maxalyasxiznqxmrzfzm.supabase.co';
 const supabaseKey = 'sb_publishable_oWAYCI2tk-k3NyCJkXk9_g_9PB4SIlj';
 
-// Supabase को चालू करना
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-console.log("Supabase Connected Successfully! 🚀");
-
+let supabase = null;
+try {
+    if (window.supabase) {
+        supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        console.log("Supabase Connected Successfully! 🚀");
+    } else {
+        console.warn("Supabase library not found. Comments won't save.");
+    }
+} catch (error) {
+    console.error("Supabase Connection Error:", error);
+}
 
 // ==========================================
-// 1. VARIABLES (सभी चीजों को सेलेक्ट करना)
+// 1. VARIABLES 
 // ==========================================
 const animeGrid = document.getElementById('anime-grid');
 const searchInput = document.getElementById('search-input');
@@ -18,9 +25,10 @@ const searchBtn = document.getElementById('search-btn');
 const sectionTitle = document.getElementById('section-title');
 const watchlistItems = document.getElementById('watchlist-items');
 
-// Video Player Variables
+// Video Player Variables (Local Video Support Added)
 const playerSection = document.getElementById('player-section');
-const videoPlayer = document.getElementById('video-player');
+const iframePlayer = document.getElementById('video-player');
+const localPlayer = document.getElementById('local-video-player'); // Local Videos
 const playerTitle = document.getElementById('player-title');
 const closePlayerBtn = document.getElementById('close-player');
 
@@ -30,9 +38,7 @@ const feedbackModal = document.getElementById('feedback-modal');
 const closeFeedback = document.getElementById('close-feedback');
 const feedbackForm = document.getElementById('feedback-form');
 
-// LocalStorage से वॉचलिस्ट लोड करना
 let watchlist = JSON.parse(localStorage.getItem('animeWatchlist')) || [];
-
 
 // ==========================================
 // 2. FETCH DATA & DISPLAY
@@ -44,12 +50,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
 async function fetchAnime(url) {
     try {
-        animeGrid.innerHTML = `<p class="loading">Loading anime content...</p>`;
+        animeGrid.innerHTML = `<p class="loading">Loading anime content... ⏳</p>`;
         const response = await fetch(url);
+        if (!response.ok) throw new Error("API Limit Reached");
         const resData = await response.json();
         displayAnime(resData.data);
     } catch (error) {
-        animeGrid.innerHTML = `<p class="loading" style="color:red;">Failed to load data. Please try again later.</p>`;
+        animeGrid.innerHTML = `<p class="loading" style="color:#ff4757;">Server is busy fetching anime. Try searching manually! 🔍</p>`;
     }
 }
 
@@ -77,7 +84,6 @@ function displayAnime(animeList) {
     });
 }
 
-
 // ==========================================
 // 3. SEARCH ENGINE FUNCTIONALITY
 // ==========================================
@@ -93,7 +99,6 @@ function performSearch() {
         fetchAnime(`https://api.jikan.moe/v4/anime?q=${query}&limit=20`);
     }
 }
-
 
 // ==========================================
 // 4. WATCHLIST FUNCTIONALITY
@@ -132,65 +137,78 @@ function displayWatchlist() {
     });
 }
 
-
 // ==========================================
-// 5. VIDEO PLAYER & ACTIONS FUNCTIONALITY
+// 5. VIDEO PLAYER (WITH LOCAL VIDEO SUPPORT)
 // ==========================================
 const likeBtn = document.getElementById('like-btn');
-const likeText = document.getElementById('like-text');
-const shareBtn = document.getElementById('share-btn');
-const downloadBtn = document.getElementById('download-btn');
 const commentBtn = document.getElementById('comment-btn');
 const commentSection = document.getElementById('comment-section');
 const commentInput = document.getElementById('comment-input');
 const submitComment = document.getElementById('submit-comment');
 const commentList = document.getElementById('comment-list');
+const shareBtn = document.getElementById('share-btn');
+const downloadBtn = document.getElementById('download-btn');
 
 let currentVideoTitle = "";
 let currentVideoUrl = "";
 
 window.playVideo = function(url, title) {
-    if (url === 'null') {
+    if (url === 'null' || url === '') {
         alert("Sorry! No video available for this.");
         return;
     }
     
     currentVideoTitle = title;
     currentVideoUrl = url;
-    
     playerTitle.innerText = `Playing: ${title}`;
-    videoPlayer.src = url; 
+    
+    // Check if video is local (.mp4) or YouTube/API (iframe)
+    if((url.includes('.mp4') || url.includes('.webm')) && localPlayer) {
+        if(iframePlayer) iframePlayer.style.display = 'none';
+        localPlayer.style.display = 'block';
+        localPlayer.src = url;
+        localPlayer.play();
+    } else if (iframePlayer) {
+        if(localPlayer) { localPlayer.style.display = 'none'; localPlayer.pause(); }
+        iframePlayer.style.display = 'block';
+        iframePlayer.src = url;
+    }
+
     playerSection.style.display = 'block'; 
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
     
     checkLikeStatus(title);
-    loadComments(title); // Supabase से कमेंट्स लोड करेगा
-    commentSection.style.display = 'none';
+    loadComments(title);
+    if(commentSection) commentSection.style.display = 'none';
 }
 
 if (closePlayerBtn) {
     closePlayerBtn.addEventListener('click', () => {
         playerSection.style.display = 'none';
-        videoPlayer.src = ''; 
+        if(iframePlayer) iframePlayer.src = ''; 
+        if(localPlayer) { localPlayer.pause(); localPlayer.src = ''; }
     });
 }
 
-// --- LIKE BUTTON LOGIC (LocalStorage) ---
-likeBtn.addEventListener('click', () => {
-    let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
-    if (likesData[currentVideoTitle]) {
-        delete likesData[currentVideoTitle];
-        likeBtn.classList.remove('liked');
-        likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
-    } else {
-        likesData[currentVideoTitle] = true;
-        likeBtn.classList.add('liked');
-        likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
-    }
-    localStorage.setItem('animeLikes', JSON.stringify(likesData));
-});
+// --- LIKE, SHARE, DOWNLOAD ---
+if (likeBtn) {
+    likeBtn.addEventListener('click', () => {
+        let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
+        if (likesData[currentVideoTitle]) {
+            delete likesData[currentVideoTitle];
+            likeBtn.classList.remove('liked');
+            likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
+        } else {
+            likesData[currentVideoTitle] = true;
+            likeBtn.classList.add('liked');
+            likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
+        }
+        localStorage.setItem('animeLikes', JSON.stringify(likesData));
+    });
+}
 
 function checkLikeStatus(title) {
+    if(!likeBtn) return;
     let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
     if (likesData[title]) {
         likeBtn.classList.add('liked');
@@ -201,102 +219,88 @@ function checkLikeStatus(title) {
     }
 }
 
-// --- SHARE BUTTON LOGIC ---
-shareBtn.addEventListener('click', async () => {
-    const shareData = { title: currentVideoTitle, text: `Watch ${currentVideoTitle} on AnimeFun!`, url: window.location.href };
-    try {
-        if (navigator.share) {
-            await navigator.share(shareData);
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            alert("Website Link copied to clipboard!");
-        }
-    } catch (err) { console.error("Error sharing:", err); }
-});
+if (shareBtn) {
+    shareBtn.addEventListener('click', async () => {
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: currentVideoTitle, text: `Watch ${currentVideoTitle}`, url: window.location.href });
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Link copied!");
+            }
+        } catch (err) {}
+    });
+}
 
-// --- DOWNLOAD BUTTON LOGIC ---
-downloadBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(currentVideoUrl);
-    alert(`Downloading direct embedded videos is restricted.\n\nThe video link has been copied: ${currentVideoUrl}`);
-});
-
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(currentVideoUrl);
+        alert(`Link copied: ${currentVideoUrl}\nPaste it in any downloader!`);
+    });
+}
 
 // ==========================================
-// 🚀 SUPABASE LIVE COMMENTS LOGIC 🚀
+// 6. SUPABASE LIVE COMMENTS LOGIC
 // ==========================================
-commentBtn.addEventListener('click', () => {
-    commentSection.style.display = commentSection.style.display === 'none' ? 'block' : 'none';
-});
+if (commentBtn) {
+    commentBtn.addEventListener('click', () => {
+        commentSection.style.display = commentSection.style.display === 'none' ? 'block' : 'none';
+    });
+}
 
-// कमेंट पोस्ट करना
-submitComment.addEventListener('click', async () => {
-    const text = commentInput.value.trim();
-    if (text !== "") {
-        submitComment.innerText = "Posting... ⏳";
-        submitComment.disabled = true;
+if (submitComment) {
+    submitComment.addEventListener('click', async () => {
+        const text = commentInput.value.trim();
+        if (text !== "" && supabase) {
+            submitComment.innerText = "Posting... ⏳";
+            submitComment.disabled = true;
 
-        // Supabase Database में सेव करना
-        const { data, error } = await supabase
-            .from('anime_comments')
-            .insert([ { video_title: currentVideoTitle, comment_text: text } ]);
+            const { data, error } = await supabase.from('anime_comments').insert([ { video_title: currentVideoTitle, comment_text: text } ]);
 
-        if (error) {
-            console.error("Error saving comment:", error);
-            alert("Failed to post comment.");
-        } else {
-            commentInput.value = "";
-            loadComments(currentVideoTitle); // नया कमेंट तुरंत स्क्रीन पर दिखाना
+            if (error) {
+                alert("Failed to post comment.");
+            } else {
+                commentInput.value = "";
+                loadComments(currentVideoTitle);
+            }
+            submitComment.innerText = "Post";
+            submitComment.disabled = false;
+        } else if (!supabase) {
+            alert("Database not connected!");
         }
+    });
+}
 
-        submitComment.innerText = "Post";
-        submitComment.disabled = false;
-    }
-});
-
-// कमेंट्स डेटाबेस से लोड करना
 async function loadComments(title) {
+    if (!commentList) return;
     commentList.innerHTML = `<li style="text-align:center; color:#868686;">Loading live comments... ⏳</li>`;
     
-    // Supabase Database से मंगाना
-    const { data, error } = await supabase
-        .from('anime_comments')
-        .select('*')
-        .eq('video_title', title)
-        .order('created_at', { ascending: false });
-
-    commentList.innerHTML = "";
-
-    if (error) {
-        console.error("Error loading comments:", error);
-        commentList.innerHTML = `<li style="text-align:center; color:red;">Error loading comments.</li>`;
+    if (!supabase) {
+        commentList.innerHTML = `<li style="text-align:center; color:red;">Database Error</li>`;
         return;
     }
 
-    if (!data || data.length === 0) {
+    const { data, error } = await supabase.from('anime_comments').select('*').eq('video_title', title).order('created_at', { ascending: false });
+
+    commentList.innerHTML = "";
+    if (error || !data || data.length === 0) {
         commentList.innerHTML = `<li style="text-align:center; color:#868686;">No comments yet. Be the first!</li>`;
         return;
     }
     
-    data.forEach(commentRow => {
+    data.forEach(row => {
         let li = document.createElement('li');
-        li.innerHTML = `<strong>Guest:</strong> ${commentRow.comment_text}`;
+        li.innerHTML = `<strong>Guest:</strong> ${row.comment_text}`;
         commentList.appendChild(li);
     });
 }
 
-
 // ==========================================
-// 6. FEEDBACK FORM (GOOGLE SHEETS)
+// 7. GOOGLE SHEETS FEEDBACK & MOBILE SLIDER
 // ==========================================
-if (feedbackBtn) {
-    feedbackBtn.addEventListener('click', () => { feedbackModal.style.display = 'block'; });
-}
-if (closeFeedback) {
-    closeFeedback.addEventListener('click', () => { feedbackModal.style.display = 'none'; });
-}
-window.addEventListener('click', (e) => {
-    if (e.target === feedbackModal) { feedbackModal.style.display = 'none'; }
-});
+if (feedbackBtn) feedbackBtn.addEventListener('click', () => feedbackModal.style.display = 'block');
+if (closeFeedback) closeFeedback.addEventListener('click', () => feedbackModal.style.display = 'none');
+window.addEventListener('click', (e) => { if (e.target === feedbackModal) feedbackModal.style.display = 'none'; });
 
 if (feedbackForm) {
     feedbackForm.addEventListener('submit', (e) => {
@@ -304,330 +308,31 @@ if (feedbackForm) {
         const submitBtn = feedbackForm.querySelector('.submit-btn');
         submitBtn.innerText = "Sending... ⏳";
         submitBtn.disabled = true;
-
         const scriptURL = 'https://script.google.com/macros/s/18VVfeDCnfWN6lxq62R8s4zkc7NgfrXHMsPYpxs_mffJuqCbq0jXgHufs/exec';
 
         fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: new FormData(feedbackForm) })
         .then(() => {
-            alert("Feedback sent successfully! Thank you. ❤️");
-            feedbackForm.reset(); 
-            feedbackModal.style.display = 'none'; 
-            submitBtn.innerText = "Send Message 🚀";
-            submitBtn.disabled = false;
-        })
-        .catch(error => {
-            console.error('Error!', error.message);
-            alert("Something went wrong. Please try again.");
-            submitBtn.innerText = "Send Message 🚀";
-            submitBtn.disabled = false;
+            alert("Feedback sent successfully! ❤️");
+            feedbackForm.reset(); feedbackModal.style.display = 'none'; 
+            submitBtn.innerText = "Send Message 🚀"; submitBtn.disabled = false;
         });
     });
 }
 
-// ==========================================
-// 7. MOBILE WATCHLIST SLIDER
-// ==========================================
 const toggleWatchlistBtn = document.getElementById('toggle-watchlist');
 const watchlistSidebar = document.querySelector('.watchlist-sidebar');
 const closeSidebarBtn = document.getElementById('close-sidebar-btn');
 
-if (toggleWatchlistBtn) {
+if (toggleWatchlistBtn && watchlistSidebar) {
     toggleWatchlistBtn.addEventListener('click', () => {
         watchlistSidebar.classList.toggle('active');
-        if (watchlistSidebar.classList.contains('active')) {
-            toggleWatchlistBtn.innerText = "✖ Close List";
-            toggleWatchlistBtn.style.backgroundColor = "#1f2833";
-        } else {
-            toggleWatchlistBtn.innerText = "⭐ Watchlist";
-            toggleWatchlistBtn.style.backgroundColor = "#ff4757";
-        }
+        toggleWatchlistBtn.innerText = watchlistSidebar.classList.contains('active') ? "✖ Close List" : "⭐ Watchlist";
     });
 }
-
-if (closeSidebarBtn) {
+if (closeSidebarBtn && watchlistSidebar) {
     closeSidebarBtn.addEventListener('click', () => {
         watchlistSidebar.classList.remove('active');
-        toggleWatchlistBtn.innerText = "⭐ Watchlist";
-        toggleWatchlistBtn.style.backgroundColor = "#ff4757";
+        if (toggleWatchlistBtn) toggleWatchlistBtn.innerText = "⭐ Watchlist";
     });
 }
 
-document.addEventListener('click', (event) => {
-    if (watchlistSidebar.classList.contains('active') && 
-        !watchlistSidebar.contains(event.target) && 
-        event.target !== toggleWatchlistBtn) {
-        
-        watchlistSidebar.classList.remove('active');
-        toggleWatchlistBtn.innerText = "⭐ Watchlist";
-        toggleWatchlistBtn.style.backgroundColor = "#ff4757";
-    }
-});
-window.removeFromWatchlist = function(index) {
-    watchlist.splice(index, 1);
-    localStorage.setItem('animeWatchlist', JSON.stringify(watchlist));
-    displayWatchlist();
-}
-
-function displayWatchlist() {
-    watchlistItems.innerHTML = '';
-    if (watchlist.length === 0) {
-        watchlistItems.innerHTML = `<p class="empty-msg">Your watchlist is empty.</p>`;
-        return;
-    }
-
-    watchlist.forEach((animeTitle, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span>${animeTitle}</span>
-            <button class="remove-btn" onclick="removeFromWatchlist(${index})">❌</button>
-        `;
-        watchlistItems.appendChild(li);
-    });
-}
-
-// ==========================================
-// 5. VIDEO PLAYER & ACTIONS FUNCTIONALITY
-// ==========================================
-const likeBtn = document.getElementById('like-btn');
-const likeText = document.getElementById('like-text');
-const shareBtn = document.getElementById('share-btn');
-const downloadBtn = document.getElementById('download-btn');
-const commentBtn = document.getElementById('comment-btn');
-const commentSection = document.getElementById('comment-section');
-const commentInput = document.getElementById('comment-input');
-const submitComment = document.getElementById('submit-comment');
-const commentList = document.getElementById('comment-list');
-
-let currentVideoTitle = "";
-let currentVideoUrl = "";
-
-window.playVideo = function(url, title) {
-    if (url === 'null') {
-        alert("Sorry! No video available for this.");
-        return;
-    }
-    
-    currentVideoTitle = title;
-    currentVideoUrl = url;
-    
-    playerTitle.innerText = `Playing: ${title}`;
-    videoPlayer.src = url; 
-    playerSection.style.display = 'block'; 
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
-    
-    // लोड होते ही चेक करें कि क्या यूज़र ने इसे पहले लाइक किया था
-    checkLikeStatus(title);
-    // इस वीडियो के पुराने कमेंट्स लोड करें
-    loadComments(title);
-    // कमेंट सेक्शन को डिफ़ॉल्ट रूप से बंद रखें
-    commentSection.style.display = 'none';
-}
-
-// Player Close
-if (closePlayerBtn) {
-    closePlayerBtn.addEventListener('click', () => {
-        playerSection.style.display = 'none';
-        videoPlayer.src = ''; 
-    });
-}
-
-// --- LIKE BUTTON LOGIC ---
-likeBtn.addEventListener('click', () => {
-    let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
-    
-    if (likesData[currentVideoTitle]) {
-        // Unlike
-        delete likesData[currentVideoTitle];
-        likeBtn.classList.remove('liked');
-        likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
-    } else {
-        // Like
-        likesData[currentVideoTitle] = true;
-        likeBtn.classList.add('liked');
-        likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
-    }
-    localStorage.setItem('animeLikes', JSON.stringify(likesData));
-});
-
-function checkLikeStatus(title) {
-    let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
-    if (likesData[title]) {
-        likeBtn.classList.add('liked');
-        likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
-    } else {
-        likeBtn.classList.remove('liked');
-        likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
-    }
-}
-
-// --- SHARE BUTTON LOGIC (Web Share API) ---
-shareBtn.addEventListener('click', async () => {
-    const shareData = {
-        title: currentVideoTitle,
-        text: `Watch ${currentVideoTitle} on AnimeFun!`,
-        url: window.location.href
-    };
-    try {
-        if (navigator.share) {
-            await navigator.share(shareData);
-        } else {
-            // अगर पीसी पर हैं तो लिंक कॉपी कर लें
-            navigator.clipboard.writeText(window.location.href);
-            alert("Website Link copied to clipboard!");
-        }
-    } catch (err) {
-        console.error("Error sharing:", err);
-    }
-});
-
-// --- DOWNLOAD BUTTON LOGIC ---
-downloadBtn.addEventListener('click', () => {
-    // यूट्यूब वीडियो सीधे डाउनलोड नहीं हो सकते, इसलिए हम लिंक कॉपी कर रहे हैं
-    navigator.clipboard.writeText(currentVideoUrl);
-    alert(`Downloading direct embedded videos is restricted.\n\nThe video link has been copied: ${currentVideoUrl}\nYou can paste it in any downloader tool.`);
-});
-
-// --- COMMENT BUTTON LOGIC ---
-commentBtn.addEventListener('click', () => {
-    if (commentSection.style.display === 'none') {
-        commentSection.style.display = 'block';
-    } else {
-        commentSection.style.display = 'none';
-    }
-});
-
-submitComment.addEventListener('click', () => {
-    const text = commentInput.value.trim();
-    if (text !== "") {
-        let commentsData = JSON.parse(localStorage.getItem('animeComments')) || {};
-        if (!commentsData[currentVideoTitle]) {
-            commentsData[currentVideoTitle] = [];
-        }
-        
-        commentsData[currentVideoTitle].push(text);
-        localStorage.setItem('animeComments', JSON.stringify(commentsData));
-        
-        commentInput.value = "";
-        loadComments(currentVideoTitle);
-    }
-});
-
-function loadComments(title) {
-    commentList.innerHTML = "";
-    let commentsData = JSON.parse(localStorage.getItem('animeComments')) || {};
-    let videoComments = commentsData[title] || [];
-    
-    if (videoComments.length === 0) {
-        commentList.innerHTML = `<li style="text-align:center; color:#868686;">No comments yet. Be the first!</li>`;
-        return;
-    }
-    
-    videoComments.forEach(comment => {
-        let li = document.createElement('li');
-        li.innerHTML = `<strong>Guest:</strong> ${comment}`;
-        commentList.appendChild(li);
-    });
-}
-
-
-
-// ==========================================
-// 6. FEEDBACK FORM (GOOGLE SHEETS)
-// ==========================================
-// Open Feedback Modal
-if (feedbackBtn) {
-    feedbackBtn.addEventListener('click', () => {
-        feedbackModal.style.display = 'block';
-    });
-}
-
-// Close Feedback Modal
-if (closeFeedback) {
-    closeFeedback.addEventListener('click', () => {
-        feedbackModal.style.display = 'none';
-    });
-}
-
-// Close Modal when clicking outside
-window.addEventListener('click', (e) => {
-    if (e.target === feedbackModal) {
-        feedbackModal.style.display = 'none';
-    }
-});
-
-// Google Sheets Submit Logic
-if (feedbackForm) {
-    feedbackForm.addEventListener('submit', (e) => {
-        e.preventDefault(); 
-        
-        const submitBtn = feedbackForm.querySelector('.submit-btn');
-        submitBtn.innerText = "Sending... ⏳";
-        submitBtn.disabled = true;
-
-        // तुम्हारा Google Apps Script Web App URL
-        const scriptURL = 'https://script.google.com/macros/s/18VVfeDCnfWN6lxq62R8s4zkc7NgfrXHMsPYpxs_mffJuqCbq0jXgHufs/exec';
-
-        fetch(scriptURL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: new FormData(feedbackForm)
-        })
-        .then(() => {
-            alert("Feedback sent successfully! Thank you. ❤️");
-            feedbackForm.reset(); 
-            feedbackModal.style.display = 'none'; 
-            submitBtn.innerText = "Send Message 🚀";
-            submitBtn.disabled = false;
-        })
-        .catch(error => {
-            console.error('Error!', error.message);
-            alert("Something went wrong. Please try again.");
-            submitBtn.innerText = "Send Message 🚀";
-            submitBtn.disabled = false;
-        });
-    });
-}
-// ==========================================
-// 7. MOBILE WATCHLIST SLIDER
-// ==========================================
-const toggleWatchlistBtn = document.getElementById('toggle-watchlist');
-const watchlistSidebar = document.querySelector('.watchlist-sidebar');
-
-if (toggleWatchlistBtn) {
-    toggleWatchlistBtn.addEventListener('click', () => {
-        // 'active' क्लास को चालू/बंद करेगा
-        watchlistSidebar.classList.toggle('active');
-        
-        // बटन का टेक्स्ट चेंज करने के लिए
-        if (watchlistSidebar.classList.contains('active')) {
-            toggleWatchlistBtn.innerText = "✖ Close List";
-            toggleWatchlistBtn.style.backgroundColor = "#1f2833";
-        } else {
-            toggleWatchlistBtn.innerText = "⭐ Watchlist";
-            toggleWatchlistBtn.style.backgroundColor = "#ff4757";
-        }
-    });
-}
-const closeSidebarBtn = document.getElementById('close-sidebar-btn');
-
-// 1. '✖' बटन दबाने पर स्लाइडर बंद करें
-if (closeSidebarBtn) {
-    closeSidebarBtn.addEventListener('click', () => {
-        watchlistSidebar.classList.remove('active');
-        toggleWatchlistBtn.innerText = "⭐ Watchlist";
-        toggleWatchlistBtn.style.backgroundColor = "#ff4757";
-    });
-}
-
-// 2. स्लाइडर के बाहर कहीं भी क्लिक करने पर उसे ऑटोमैटिक बंद करें
-document.addEventListener('click', (event) => {
-    // चेक करें कि स्लाइडर खुला है और क्लिक स्लाइडर या टॉगल बटन के बाहर हुआ है
-    if (watchlistSidebar.classList.contains('active') && 
-        !watchlistSidebar.contains(event.target) && 
-        event.target !== toggleWatchlistBtn) {
-        
-        watchlistSidebar.classList.remove('active');
-        toggleWatchlistBtn.innerText = "⭐ Watchlist";
-        toggleWatchlistBtn.style.backgroundColor = "#ff4757";
-    }
-});
