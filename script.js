@@ -203,3 +203,24 @@ if (feedbackForm) {
         });
     });
 }
+// ==========================================
+// 7. MOBILE WATCHLIST SLIDER
+// ==========================================
+const toggleWatchlistBtn = document.getElementById('toggle-watchlist');
+const watchlistSidebar = document.querySelector('.watchlist-sidebar');
+
+if (toggleWatchlistBtn) {
+    toggleWatchlistBtn.addEventListener('click', () => {
+        // 'active' क्लास को चालू/बंद करेगा
+        watchlistSidebar.classList.toggle('active');
+        
+        // बटन का टेक्स्ट चेंज करने के लिए
+        if (watchlistSidebar.classList.contains('active')) {
+            toggleWatchlistBtn.innerText = "✖ Close List";
+            toggleWatchlistBtn.style.backgroundColor = "#1f2833";
+        } else {
+            toggleWatchlistBtn.innerText = "⭐ Watchlist";
+            toggleWatchlistBtn.style.backgroundColor = "#ff4757";
+        }
+    });
+}
