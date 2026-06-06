@@ -2,7 +2,7 @@
 // 0. SUPABASE CONNECTION (DATABASE)
 // ==========================================
 const supabaseUrl = 'https://maxalyasxiznqxmrzfzm.supabase.co';
-const supabaseKey = 'Sb_publishable_0Vf4Ss_pKJjM4EzDebff4Q_0EWRYLXa';
+const supabaseKey = 'sb_publishable_oWAYCI2tk-k3NyCJkXk9_g_9PB4SIlj';
 
 // Supabase को चालू करना
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
