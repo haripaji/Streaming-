@@ -1,92 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta Tags -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AnimeFun - Track, discover, and stream your favorite anime. Explore trending anime, build your watchlist, and join our anime community.">
+    <meta name="keywords" content="anime, streaming, tracker, discover, watchlist">
+    <meta name="theme-color" content="#1a1a1a">
+    
+    <!-- Open Graph Tags for Social Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="AnimeFun - Track & Discover Anime">
+    <meta property="og:description" content="Discover and track your favorite anime series.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/haripaji/Streaming-/main/_.jpeg">
+    
+    <!-- Title -->
     <title>AnimeFun - Track & Discover Anime</title>
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header>
-        <div class="logo">Anime<span>Fun</span> 🎌</div>
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder="Search anime (e.g., Naruto, One Piece)...">
-            <button id="search-btn">Search</button>
-        </div>
-    </header>
-
-    <main class="container">
-        <div class="banner-container" style="width: 100%; margin-bottom: 25px;">
-    <img src="https://raw.githubusercontent.com/haripaji/Streaming-/main/_.jpeg" alt="Anime Banner" class="anime-img" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-</div>
-
-                <section class="player-section" id="player-section" style="display: none;">
-            <div class="video-container">
-                <iframe id="video-player" src="" frameborder="0" allowfullscreen></iframe>
+    <!-- Header/Navigation -->
+    <header role="banner" class="header">
+        <nav class="navbar" role="navigation" aria-label="Main navigation">
+            <div class="logo" aria-label="AnimeFun - Anime Streaming Platform">
+                Anime<span class="highlight">Fun</span> 🎌
             </div>
             
-            <div class="player-controls">
-                <h2 id="player-title">Anime Title</h2>
-                
-                <div class="action-buttons">
-                    <button id="like-btn" class="action-btn">🤍 <span id="like-text">Like</span></button>
-                    <button id="comment-btn" class="action-btn">💬 Comment</button>
-                    <button id="share-btn" class="action-btn">🔗 Share</button>
-                    <button id="download-btn" class="action-btn">⬇️ Download</button>
-                </div>
+            <div class="search-box" role="search">
+                <input 
+                    type="search" 
+                    id="search-input" 
+                    placeholder="Search anime (e.g., Naruto, One Piece)..."
+                    aria-label="Search for anime"
+                    autocomplete="off"
+                >
+                <button 
+                    id="search-btn" 
+                    aria-label="Submit search"
+                    class="search-btn"
+                >
+                    Search
+                </button>
             </div>
+        </nav>
+    </header>
 
-            <div id="comment-section" class="comment-section" style="display: none;">
-                <div class="comment-input-area">
-                    <input type="text" id="comment-input" placeholder="Write a comment...">
-                    <button id="submit-comment">Post</button>
-                </div>
-                <ul id="comment-list"></ul>
+    <!-- Main Content -->
+    <main class="container" role="main">
+        
+        <!-- Banner Section -->
+        <section class="banner-section" aria-label="Featured anime banner">
+            <div class="banner-container">
+                <img 
+                    src="https://raw.githubusercontent.com/haripaji/Streaming-/main/_.jpeg" 
+                    alt="Featured anime content banner" 
+                    class="anime-banner-img" 
+                    loading="lazy"
+                >
             </div>
-
-            <button id="close-player">✖ Close Player</button>
         </section>
 
+        <!-- Video Player Section -->
+        <section class="player-section" id="player-section" aria-label="Anime video player" hidden>
+            <div class="player-wrapper">
+                <div class="video-container">
+                    <iframe 
+                        id="video-player" 
+                        src="" 
+                        title="Anime video player"
+                        frameborder="0" 
+                        allowfullscreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    ></iframe>
+                </div>
+                
+                <!-- Player Controls -->
+                <div class="player-controls">
+                    <h2 id="player-title" class="player-title">Anime Title</h2>
+                    
+                    <div class="action-buttons" role="toolbar" aria-label="Player actions">
+                        <button 
+                            id="like-btn" 
+                            class="action-btn" 
+                            aria-label="Like this anime"
+                            aria-pressed="false"
+                        >
+                            🤍 <span id="like-text">Like</span>
+                        </button>
+                        <button 
+                            id="comment-btn" 
+                            class="action-btn" 
+                            aria-label="Open comments section"
+                        >
+                            💬 Comment
+                        </button>
+                        <button 
+                            id="share-btn" 
+                            class="action-btn" 
+                            aria-label="Share this anime"
+                        >
+                            🔗 Share
+                        </button>
+                        <button 
+                            id="download-btn" 
+                            class="action-btn" 
+                            aria-label="Download this anime"
+                        >
+                            ⬇️ Download
+                        </button>
+                    </div>
+                </div>
 
-        <section class="content-area">
-            <h2 id="section-title">🔥 Trending Anime</h2>
-            <div class="anime-grid" id="anime-grid">
-                <p class="loading">Loading trending anime...</p>
+                <!-- Comment Section -->
+                <section id="comment-section" class="comment-section" aria-label="Comments section" hidden>
+                    <div class="comment-input-area">
+                        <input 
+                            type="text" 
+                            id="comment-input" 
+                            placeholder="Write a comment..."
+                            aria-label="Comment input field"
+                        >
+                        <button 
+                            id="submit-comment" 
+                            aria-label="Submit comment"
+                            class="comment-submit-btn"
+                        >
+                            Post
+                        </button>
+                    </div>
+                    <ul id="comment-list" class="comment-list" role="list"></ul>
+                </section>
+
+                <!-- Close Player Button -->
+                <button 
+                    id="close-player" 
+                    class="close-player-btn" 
+                    aria-label="Close video player"
+                >
+                    ✖ Close Player
+                </button>
+            </div>
+        </section>
+
+        <!-- Anime Grid Section -->
+        <section class="content-area" aria-label="Anime content grid">
+            <h2 id="section-title" class="section-title">🔥 Trending Anime</h2>
+            <div class="anime-grid" id="anime-grid" role="grid">
+                <p class="loading" aria-live="polite">Loading trending anime...</p>
             </div>
         </section>
 
     </main>
 
-    <button id="feedback-btn" class="floating-btn">💬 Feedback</button>
+    <!-- Floating Action Buttons -->
+    <div class="floating-actions">
+        <!-- Feedback Button -->
+        <button 
+            id="feedback-btn" 
+            class="floating-btn feedback-btn" 
+            aria-label="Open feedback form"
+            aria-haspopup="dialog"
+        >
+            💬 Feedback
+        </button>
 
-    <div id="feedback-modal" class="modal">
+        <!-- Watchlist Button (Mobile) -->
+        <button 
+            id="toggle-watchlist" 
+            class="floating-btn watchlist-btn" 
+            aria-label="Toggle watchlist sidebar"
+            aria-haspopup="true"
+            aria-expanded="false"
+        >
+            ⭐ Watchlist
+        </button>
+    </div>
+
+    <!-- Feedback Modal -->
+    <dialog id="feedback-modal" class="modal" aria-labelledby="feedback-title">
         <div class="modal-content">
-            <span class="close-btn" id="close-feedback">&times;</span>
-            <h2>Send Feedback</h2>
-            <p style="text-align: center; font-size: 14px; margin-bottom: 15px;">Tell us what to improve or request an anime!</p>
+            <button 
+                class="close-btn" 
+                id="close-feedback" 
+                aria-label="Close feedback modal"
+            >
+                &times;
+            </button>
             
-            <form id="feedback-form">
-                <input type="text" name="name" placeholder="Your Name" required>
-                <input type="email" name="email" placeholder="Your Email" required>
-                <textarea name="message" placeholder="Type your message here..." rows="4" required></textarea>
-                <button type="submit" class="submit-btn">Send Message 🚀</button>
+            <h2 id="feedback-title" class="modal-title">Send Feedback</h2>
+            <p class="modal-description">Tell us what to improve or request an anime!</p>
+            
+            <form id="feedback-form" class="feedback-form">
+                <div class="form-group">
+                    <label for="feedback-name" class="sr-only">Your Name</label>
+                    <input 
+                        type="text" 
+                        id="feedback-name"
+                        name="name" 
+                        placeholder="Your Name" 
+                        required
+                        aria-required="true"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="feedback-email" class="sr-only">Your Email</label>
+                    <input 
+                        type="email" 
+                        id="feedback-email"
+                        name="email" 
+                        placeholder="Your Email" 
+                        required
+                        aria-required="true"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="feedback-message" class="sr-only">Your Message</label>
+                    <textarea 
+                        id="feedback-message"
+                        name="message" 
+                        placeholder="Type your message here..." 
+                        rows="4" 
+                        required
+                        aria-required="true"
+                    ></textarea>
+                </div>
+                
+                <button 
+                    type="submit" 
+                    class="submit-btn" 
+                    aria-label="Submit feedback"
+                >
+                    Send Message 🚀
+                </button>
             </form>
         </div>
-    </div>
+    </dialog>
+
+    <!-- Watchlist Sidebar -->
+    <aside 
+        class="watchlist-sidebar" 
+        id="watchlist-sidebar"
+        role="complementary"
+        aria-label="My Watchlist"
+    >
+        <div class="watchlist-header">
+            <h3 class="watchlist-title">⭐ My Watchlist</h3>
+            <button 
+                id="close-sidebar-btn" 
+                class="close-sidebar" 
+                aria-label="Close watchlist sidebar"
+            >
+                ✖
+            </button>
+        </div>
+        
+        <ul id="watchlist-items" class="watchlist-items" role="list">
+            <li class="empty-msg" role="status">Your watchlist is empty.</li>
+        </ul>
+    </aside>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="script.js" defer></script>
     
-        <button id="toggle-watchlist" class="mobile-watchlist-btn">⭐ Watchlist</button>
-            <aside class="watchlist-sidebar">
-            <span id="close-sidebar-btn" class="close-sidebar">✖</span>
-            
-            <h3>⭐ My Watchlist</h3>
-            <ul id="watchlist-items">
-                <p class="empty-msg">Your watchlist is empty.</p>
-            </ul>
-        </aside>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script src="script.js"></script>
+    <!-- Noscript Fallback -->
+    <noscript>
+        <p style="text-align: center; padding: 20px; font-size: 16px;">
+            Please enable JavaScript to use AnimeFun. This application requires JavaScript to function properly.
+        </p>
+    </noscript>
 </body>
 </html>
-
