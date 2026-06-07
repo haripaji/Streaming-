@@ -60,6 +60,7 @@ async function fetchAnime(url) {
     }
 }
 
+// कार्ड्स स्क्रीन पर दिखाने का सुरक्षित (Crash-Proof) फंक्शन
 function displayAnime(animeList) {
     animeGrid.innerHTML = '';
     if (!animeList || animeList.length === 0) {
@@ -72,17 +73,26 @@ function displayAnime(animeList) {
         animeCard.classList.add('anime-card');
         
         const trailerUrl = anime.trailer && anime.trailer.embed_url ? anime.trailer.embed_url : 'null';
-        const safeTitle = anime.title.replace(/'/g, "\\'");
 
+        // 1. कार्ड का HTML स्ट्रक्चर (यहाँ से onclick हटा दिया गया है)
         animeCard.innerHTML = `
-            <img src="${anime.images.jpg.image_url}" alt="${anime.title}">
+            <img src="${anime.images.jpg.image_url}" alt="Anime Cover">
             <h4>${anime.title}</h4>
-            <button class="play-btn" onclick="playVideo('${trailerUrl}', '${safeTitle}')">▶ Play Trailer</button>
-            <button class="add-btn" onclick="addToWatchlist('${safeTitle}')">＋ Add to List</button>
+            <button class="play-btn">▶ Play Trailer</button>
+            <button class="add-btn">＋ Add to List</button>
         `;
+
+        // 2. सुरक्षित तरीके से बटन को काम पर लगाना (यही वेबसाइट को क्रैश होने से बचाएगा)
+        const playBtn = animeCard.querySelector('.play-btn');
+        playBtn.addEventListener('click', () => playVideo(trailerUrl, anime.title));
+
+        const addBtn = animeCard.querySelector('.add-btn');
+        addBtn.addEventListener('click', () => addToWatchlist(anime.title));
+
         animeGrid.appendChild(animeCard);
     });
 }
+
 
 // ==========================================
 // 3. SEARCH ENGINE FUNCTIONALITY
