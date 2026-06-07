@@ -43,9 +43,8 @@ let watchlist = JSON.parse(localStorage.getItem('animeWatchlist')) || [];
 // ==========================================
 // 2. FETCH DATA & DISPLAY
 // ==========================================
-window.addEventListener('DOMContentLoaded', () => {
-    fetchAnime('https://api.jikan.moe/v4/top/anime');
-    displayWatchlist();
+fetchAnime('https://api.jikan.moe/v4/top/anime');
+displayWatchlist();
 });
 
 async function fetchAnime(url) {
