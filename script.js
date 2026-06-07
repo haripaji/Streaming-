@@ -114,6 +114,12 @@ function performSearch() {
 // 4. WATCHLIST FUNCTIONALITY
 // ==========================================
 window.addToWatchlist = function(title) {
+    // नया फिक्स: वॉचलिस्ट की लिमिट सेट करना
+    if (watchlist.length >= 100) {
+        alert("Watchlist limit reached! Please remove some anime first.");
+        return;
+    }
+
     if (!watchlist.includes(title)) {
         watchlist.push(title);
         localStorage.setItem('animeWatchlist', JSON.stringify(watchlist));
@@ -177,7 +183,8 @@ window.playVideo = function(url, title) {
         if(iframePlayer) iframePlayer.style.display = 'none';
         localPlayer.style.display = 'block';
         localPlayer.src = url;
-        localPlayer.play();
+        // नया फिक्स: Playback error handling
+        localPlayer.play().catch(err => console.error("Playback error:", err)); 
     } else if (iframePlayer) {
         if(localPlayer) { localPlayer.style.display = 'none'; localPlayer.pause(); }
         iframePlayer.style.display = 'block';
@@ -345,4 +352,3 @@ if (closeSidebarBtn && watchlistSidebar) {
         if (toggleWatchlistBtn) toggleWatchlistBtn.innerText = "⭐ Watchlist";
     });
 }
-
