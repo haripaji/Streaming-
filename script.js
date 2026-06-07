@@ -38,7 +38,19 @@ const feedbackModal = document.getElementById('feedback-modal');
 const closeFeedback = document.getElementById('close-feedback');
 const feedbackForm = document.getElementById('feedback-form');
 
-let watchlist = JSON.parse(localStorage.getItem('animeWatchlist')) || [];
+// Safe JSON parse helper and in-memory caches
+const LIKES_KEY = 'animeLikes';
+function safeParseJSON(value, fallback = null) {
+    try {
+        return value ? JSON.parse(value) : fallback;
+    } catch (e) {
+        console.warn('Failed to parse JSON from localStorage key', e);
+        return fallback;
+    }
+}
+
+let likesCache = safeParseJSON(localStorage.getItem(LIKES_KEY), {}) || {};
+let watchlist = safeParseJSON(localStorage.getItem('animeWatchlist'), []) || [];
 
 // ==========================================
 // 2. FETCH DATA & DISPLAY
@@ -85,7 +97,7 @@ function displayAnime(animeList) {
             <button class="add-btn">＋ Add to List</button>
         `;
 
-        // 2. सुरक्षित तरीके से बटन को काम पर लगाना (यही वेबसाइट को क्रैश होने से बचाए[...]
+        // 2. सुरक्षित तरीके से बटन को काम पर लगाना (यही वेबसाइट को क्रैश होने से बचाता है)
         const playBtn = animeCard.querySelector('.play-btn');
         if (playBtn) playBtn.addEventListener('click', () => window.playVideo(trailerUrl, anime.title));
 
@@ -152,10 +164,16 @@ function displayWatchlist() {
 
     watchlist.forEach((animeTitle, index) => {
         const li = document.createElement('li');
-        li.innerHTML = `
-            <span>${animeTitle}</span>
-            <button class="remove-btn" onclick="window.removeFromWatchlist(${index})">❌</button>
-        `;
+        const span = document.createElement('span');
+        span.textContent = animeTitle;
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-btn';
+        removeBtn.type = 'button';
+        removeBtn.textContent = '❌';
+        removeBtn.addEventListener('click', () => window.removeFromWatchlist(index));
+
+        li.appendChild(span);
+        li.appendChild(removeBtn);
         watchlistItems.appendChild(li);
     });
 }
@@ -185,6 +203,9 @@ window.playVideo = function(url, title) {
     currentVideoTitle = title || "";
     currentVideoUrl = safeUrl;
     if (playerTitle) playerTitle.innerText = `Playing: ${currentVideoTitle}`;
+
+    // store a stable reference on the player section (avoids relying on loose globals elsewhere)
+    if (playerSection) playerSection.dataset.videoTitle = currentVideoTitle;
     
     // Check if video is local (.mp4/.webm) or iframe (YouTube/API)
     const isLocal = safeUrl.includes('.mp4') || safeUrl.includes('.webm');
@@ -216,32 +237,64 @@ if (closePlayerBtn) {
 }
 
 // --- LIKE, SHARE, DOWNLOAD ---
+// Helper functions for likes (in-memory cache + localStorage save)
+function saveLikes() {
+    try {
+        localStorage.setItem(LIKES_KEY, JSON.stringify(likesCache));
+    } catch (e) {
+        console.error('Failed to save likes to localStorage', e);
+    }
+}
+
+function isLiked(title) {
+    if (!title) return false;
+    return !!likesCache[title];
+}
+
+function setLikeStateOnButton(title) {
+    if (!likeBtn) return;
+    const liked = isLiked(title);
+    likeBtn.classList.toggle('liked', liked);
+    likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+
+    // Ensure we update only a label span to avoid duplicate ids and heavy innerHTML changes
+    let label = likeBtn.querySelector('.like-label');
+    if (!label) {
+        // create a lightweight label element once
+        label = document.createElement('span');
+        label.className = 'like-label';
+        likeBtn.appendChild(label);
+    }
+
+    // emoji + label text
+    likeBtn.childNodes.forEach(node => { if (node.nodeType === Node.TEXT_NODE) node.textContent = ''; });
+    likeBtn.insertBefore(document.createTextNode(liked ? '❤️ ' : '🤍 '), likeBtn.firstChild);
+    label.textContent = liked ? 'Liked' : 'Like';
+}
+
 if (likeBtn) {
+    // Ensure accessible default markup (won't overwrite if HTML already provides it)
+    if (!likeBtn.querySelector('.like-label')) {
+        likeBtn.innerHTML = `${likeBtn.textContent.trim() ? likeBtn.textContent.trim() + ' ' : ''}<span class="like-label">Like</span>`;
+    }
+
     likeBtn.addEventListener('click', () => {
-        let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
-        if (likesData[currentVideoTitle]) {
-            delete likesData[currentVideoTitle];
-            likeBtn.classList.remove('liked');
-            likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
+        const title = (playerSection && playerSection.dataset.videoTitle) || currentVideoTitle || '';
+        if (!title) return;
+
+        if (isLiked(title)) {
+            delete likesCache[title];
         } else {
-            likesData[currentVideoTitle] = true;
-            likeBtn.classList.add('liked');
-            likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
+            likesCache[title] = true;
         }
-        localStorage.setItem('animeLikes', JSON.stringify(likesData));
+        saveLikes();
+        setLikeStateOnButton(title);
     });
 }
 
 function checkLikeStatus(title) {
-    if(!likeBtn) return;
-    let likesData = JSON.parse(localStorage.getItem('animeLikes')) || {};
-    if (likesData[title]) {
-        likeBtn.classList.add('liked');
-        likeBtn.innerHTML = `❤️ <span id="like-text">Liked</span>`;
-    } else {
-        likeBtn.classList.remove('liked');
-        likeBtn.innerHTML = `🤍 <span id="like-text">Like</span>`;
-    }
+    // Delegates to the central updater which uses the cache
+    setLikeStateOnButton(title);
 }
 
 if (shareBtn) {
