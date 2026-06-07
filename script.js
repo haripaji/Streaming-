@@ -43,24 +43,26 @@ let watchlist = JSON.parse(localStorage.getItem('animeWatchlist')) || [];
 // ==========================================
 // 2. FETCH DATA & DISPLAY
 // ==========================================
+// Initial load
 fetchAnime('https://api.jikan.moe/v4/top/anime');
 displayWatchlist();
-});
 
 async function fetchAnime(url) {
     try {
-        animeGrid.innerHTML = `<p class="loading">Loading anime content... ⏳</p>`;
+        if (animeGrid) animeGrid.innerHTML = `<p class="loading">Loading anime content... ⏳</p>`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error("API Limit Reached");
+        if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
         const resData = await response.json();
         displayAnime(resData.data);
     } catch (error) {
-        animeGrid.innerHTML = `<p class="loading" style="color:#ff4757;">Server is busy fetching anime. Try searching manually! 🔍</p>`;
+        console.error('fetchAnime error:', error);
+        if (animeGrid) animeGrid.innerHTML = `<p class="loading" style="color:#ff4757;">Server is busy fetching anime. Try searching manually! 🔍</p>`;
     }
 }
 
 // कार्ड्स स्क्रीन पर दिखाने का सुरक्षित (Crash-Proof) फंक्शन
 function displayAnime(animeList) {
+    if (!animeGrid) return;
     animeGrid.innerHTML = '';
     if (!animeList || animeList.length === 0) {
         animeGrid.innerHTML = `<p class="loading">No anime found.</p>`;
@@ -71,22 +73,24 @@ function displayAnime(animeList) {
         const animeCard = document.createElement('div');
         animeCard.classList.add('anime-card');
         
-        const trailerUrl = anime.trailer && anime.trailer.embed_url ? anime.trailer.embed_url : 'null';
+        // Safer trailer/url and image extraction using optional chaining
+        const trailerUrl = anime?.trailer?.embed_url || anime?.trailer?.url || '';
+        const imageUrl = anime?.images?.jpg?.image_url || 'https://via.placeholder.com/200x280?text=No+Image';
 
         // 1. कार्ड का HTML स्ट्रक्चर (यहाँ से onclick हटा दिया गया है)
         animeCard.innerHTML = `
-            <img src="${anime.images.jpg.image_url}" alt="Anime Cover">
+            <img src="${imageUrl}" alt="Anime Cover">
             <h4>${anime.title}</h4>
             <button class="play-btn">▶ Play Trailer</button>
             <button class="add-btn">＋ Add to List</button>
         `;
 
-        // 2. सुरक्षित तरीके से बटन को काम पर लगाना (यही वेबसाइट को क्रैश होने से बचाएगा)
+        // 2. सुरक्षित तरीके से बटन को काम पर लगाना (यही वेबसाइट को क्रैश होने से बचाए[...]
         const playBtn = animeCard.querySelector('.play-btn');
-        playBtn.addEventListener('click', () => playVideo(trailerUrl, anime.title));
+        if (playBtn) playBtn.addEventListener('click', () => window.playVideo(trailerUrl, anime.title));
 
         const addBtn = animeCard.querySelector('.add-btn');
-        addBtn.addEventListener('click', () => addToWatchlist(anime.title));
+        if (addBtn) addBtn.addEventListener('click', () => window.addToWatchlist(anime.title));
 
         animeGrid.appendChild(animeCard);
     });
@@ -96,16 +100,16 @@ function displayAnime(animeList) {
 // ==========================================
 // 3. SEARCH ENGINE FUNCTIONALITY
 // ==========================================
-searchBtn.addEventListener('click', performSearch);
-searchInput.addEventListener('keypress', (e) => {
+if (searchBtn) searchBtn.addEventListener('click', performSearch);
+if (searchInput) searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') performSearch();
 });
 
 function performSearch() {
-    const query = searchInput.value.trim();
+    const query = (searchInput && searchInput.value.trim()) || '';
     if (query !== '') {
-        sectionTitle.innerText = `🔍 Search Results for: "${query}"`;
-        fetchAnime(`https://api.jikan.moe/v4/anime?q=${query}&limit=20`);
+        if (sectionTitle) sectionTitle.innerText = `🔍 Search Results for: "${query}"`;
+        fetchAnime(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=20`);
     }
 }
 
@@ -114,6 +118,8 @@ function performSearch() {
 // ==========================================
 window.addToWatchlist = function(title) {
     // नया फिक्स: वॉचलिस्ट की लिमिट सेट करना
+    if (!title) return;
+
     if (watchlist.length >= 100) {
         alert("Watchlist limit reached! Please remove some anime first.");
         return;
@@ -130,12 +136,14 @@ window.addToWatchlist = function(title) {
 }
 
 window.removeFromWatchlist = function(index) {
+    if (typeof index !== 'number' || index < 0 || index >= watchlist.length) return;
     watchlist.splice(index, 1);
     localStorage.setItem('animeWatchlist', JSON.stringify(watchlist));
     displayWatchlist();
 }
 
 function displayWatchlist() {
+    if (!watchlistItems) return;
     watchlistItems.innerHTML = '';
     if (watchlist.length === 0) {
         watchlistItems.innerHTML = `<p class="empty-msg">Your watchlist is empty.</p>`;
@@ -146,7 +154,7 @@ function displayWatchlist() {
         const li = document.createElement('li');
         li.innerHTML = `
             <span>${animeTitle}</span>
-            <button class="remove-btn" onclick="removeFromWatchlist(${index})">❌</button>
+            <button class="remove-btn" onclick="window.removeFromWatchlist(${index})">❌</button>
         `;
         watchlistItems.appendChild(li);
     });
@@ -168,41 +176,42 @@ let currentVideoTitle = "";
 let currentVideoUrl = "";
 
 window.playVideo = function(url, title) {
-    if (url === 'null' || url === '') {
+    const safeUrl = (typeof url === 'string') ? url : '';
+    if (!safeUrl) {
         alert("Sorry! No video available for this.");
         return;
     }
     
-    currentVideoTitle = title;
-    currentVideoUrl = url;
-    playerTitle.innerText = `Playing: ${title}`;
+    currentVideoTitle = title || "";
+    currentVideoUrl = safeUrl;
+    if (playerTitle) playerTitle.innerText = `Playing: ${currentVideoTitle}`;
     
-    // Check if video is local (.mp4) or YouTube/API (iframe)
-    if((url.includes('.mp4') || url.includes('.webm')) && localPlayer) {
-        if(iframePlayer) iframePlayer.style.display = 'none';
+    // Check if video is local (.mp4/.webm) or iframe (YouTube/API)
+    const isLocal = safeUrl.includes('.mp4') || safeUrl.includes('.webm');
+    if (isLocal && localPlayer) {
+        if (iframePlayer) iframePlayer.style.display = 'none';
         localPlayer.style.display = 'block';
-        localPlayer.src = url;
-        // नया फिक्स: Playback error handling
+        localPlayer.src = safeUrl;
         localPlayer.play().catch(err => console.error("Playback error:", err)); 
     } else if (iframePlayer) {
-        if(localPlayer) { localPlayer.style.display = 'none'; localPlayer.pause(); }
+        if (localPlayer) { localPlayer.style.display = 'none'; try { localPlayer.pause(); } catch(e){} }
         iframePlayer.style.display = 'block';
-        iframePlayer.src = url;
+        iframePlayer.src = safeUrl;
     }
 
-    playerSection.style.display = 'block'; 
+    if (playerSection) playerSection.style.display = 'block'; 
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
     
-    checkLikeStatus(title);
-    loadComments(title);
-    if(commentSection) commentSection.style.display = 'none';
+    checkLikeStatus(currentVideoTitle);
+    loadComments(currentVideoTitle);
+    if (commentSection) commentSection.style.display = 'none';
 }
 
 if (closePlayerBtn) {
     closePlayerBtn.addEventListener('click', () => {
-        playerSection.style.display = 'none';
-        if(iframePlayer) iframePlayer.src = ''; 
-        if(localPlayer) { localPlayer.pause(); localPlayer.src = ''; }
+        if (playerSection) playerSection.style.display = 'none';
+        if (iframePlayer) iframePlayer.src = ''; 
+        if (localPlayer) { try { localPlayer.pause(); } catch(e){} localPlayer.src = ''; }
     });
 }
 
@@ -240,18 +249,22 @@ if (shareBtn) {
         try {
             if (navigator.share) {
                 await navigator.share({ title: currentVideoTitle, text: `Watch ${currentVideoTitle}`, url: window.location.href });
-            } else {
-                navigator.clipboard.writeText(window.location.href);
+            } else if (navigator.clipboard) {
+                await navigator.clipboard.writeText(window.location.href);
                 alert("Link copied!");
+            } else {
+                alert("Share not supported on this device.");
             }
-        } catch (err) {}
+        } catch (err) { console.error('share error', err); }
     });
 }
 
 if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(currentVideoUrl);
-        alert(`Link copied: ${currentVideoUrl}\nPaste it in any downloader!`);
+    downloadBtn.addEventListener('click', async () => {
+        try {
+            if (navigator.clipboard) await navigator.clipboard.writeText(currentVideoUrl);
+            alert(`Link copied: ${currentVideoUrl}\nPaste it in any downloader!`);
+        } catch(e) { console.error('download copy failed', e); alert('Failed to copy link'); }
     });
 }
 
@@ -260,26 +273,33 @@ if (downloadBtn) {
 // ==========================================
 if (commentBtn) {
     commentBtn.addEventListener('click', () => {
+        if (!commentSection) return;
         commentSection.style.display = commentSection.style.display === 'none' ? 'block' : 'none';
     });
 }
 
 if (submitComment) {
     submitComment.addEventListener('click', async () => {
-        const text = commentInput.value.trim();
+        const text = (commentInput && commentInput.value.trim()) || "";
         if (text !== "" && supabase) {
-            submitComment.innerText = "Posting... ⏳";
+            submitComment.textContent = "Posting... ⏳";
             submitComment.disabled = true;
 
-            const { data, error } = await supabase.from('anime_comments').insert([ { video_title: currentVideoTitle, comment_text: text } ]);
-
-            if (error) {
-                alert("Failed to post comment.");
-            } else {
-                commentInput.value = "";
-                loadComments(currentVideoTitle);
+            try {
+                const { data, error } = await supabase.from('anime_comments').insert([ { video_title: currentVideoTitle, comment_text: text } ]);
+                if (error) {
+                    console.error('Supabase insert error:', error);
+                    alert("Failed to post comment.");
+                } else {
+                    if (commentInput) commentInput.value = "";
+                    loadComments(currentVideoTitle);
+                }
+            } catch (err) {
+                console.error('submitComment error:', err);
+                alert('Failed to post comment.');
             }
-            submitComment.innerText = "Post";
+
+            submitComment.textContent = "Post";
             submitComment.disabled = false;
         } else if (!supabase) {
             alert("Database not connected!");
@@ -296,32 +316,38 @@ async function loadComments(title) {
         return;
     }
 
-    const { data, error } = await supabase.from('anime_comments').select('*').eq('video_title', title).order('created_at', { ascending: false });
+    try {
+        const { data, error } = await supabase.from('anime_comments').select('*').eq('video_title', title).order('created_at', { ascending: false });
 
-    commentList.innerHTML = "";
-    if (error || !data || data.length === 0) {
-        commentList.innerHTML = `<li style="text-align:center; color:#868686;">No comments yet. Be the first!</li>`;
-        return;
+        commentList.innerHTML = "";
+        if (error || !data || data.length === 0) {
+            commentList.innerHTML = `<li style="text-align:center; color:#868686;">No comments yet. Be the first!</li>`;
+            return;
+        }
+        
+        data.forEach(row => {
+            let li = document.createElement('li');
+            li.innerHTML = `<strong>Guest:</strong> ${row.comment_text}`;
+            commentList.appendChild(li);
+        });
+    } catch (err) {
+        console.error('loadComments error:', err);
+        commentList.innerHTML = `<li style="text-align:center; color:red;">Failed to load comments</li>`;
     }
-    
-    data.forEach(row => {
-        let li = document.createElement('li');
-        li.innerHTML = `<strong>Guest:</strong> ${row.comment_text}`;
-        commentList.appendChild(li);
-    });
 }
 
 // ==========================================
 // 7. GOOGLE SHEETS FEEDBACK & MOBILE SLIDER
 // ==========================================
-if (feedbackBtn) feedbackBtn.addEventListener('click', () => feedbackModal.style.display = 'block');
-if (closeFeedback) closeFeedback.addEventListener('click', () => feedbackModal.style.display = 'none');
+if (feedbackBtn) feedbackBtn.addEventListener('click', () => { if (feedbackModal) feedbackModal.style.display = 'block'; });
+if (closeFeedback) closeFeedback.addEventListener('click', () => { if (feedbackModal) feedbackModal.style.display = 'none'; });
 window.addEventListener('click', (e) => { if (e.target === feedbackModal) feedbackModal.style.display = 'none'; });
 
 if (feedbackForm) {
     feedbackForm.addEventListener('submit', (e) => {
         e.preventDefault(); 
         const submitBtn = feedbackForm.querySelector('.submit-btn');
+        if (!submitBtn) return;
         submitBtn.innerText = "Sending... ⏳";
         submitBtn.disabled = true;
         const scriptURL = 'https://script.google.com/macros/s/18VVfeDCnfWN6lxq62R8s4zkc7NgfrXHMsPYpxs_mffJuqCbq0jXgHufs/exec';
@@ -329,7 +355,11 @@ if (feedbackForm) {
         fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: new FormData(feedbackForm) })
         .then(() => {
             alert("Feedback sent successfully! ❤️");
-            feedbackForm.reset(); feedbackModal.style.display = 'none'; 
+            feedbackForm.reset(); if (feedbackModal) feedbackModal.style.display = 'none'; 
+            submitBtn.innerText = "Send Message 🚀"; submitBtn.disabled = false;
+        }).catch(err => {
+            console.error('Feedback send error:', err);
+            alert('Failed to send feedback');
             submitBtn.innerText = "Send Message 🚀"; submitBtn.disabled = false;
         });
     });
