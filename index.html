@@ -105,5 +105,32 @@
     <!-- Use the UMD build so window.supabase.createClient is available -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
     <script src="script.js"></script>
+<script>
+    async function fetchAnimeHTML() {
+        const grid = document.getElementById('anime-grid');
+        try {
+            grid.innerHTML = '<p class="loading">Loading anime directly... ⏳</p>';
+            const res = await fetch('https://api.jikan.moe/v4/top/anime');
+            const data = await res.json();
+            
+            grid.innerHTML = '';
+            data.data.forEach(anime => {
+                grid.innerHTML += `
+                    <div class="anime-card">
+                        <img src="${anime.images.jpg.image_url}" alt="Cover">
+                        <h4>${anime.title}</h4>
+                    </div>
+                `;
+            });
+        } catch(e) {
+            grid.innerHTML = '<p style="color:red;">Error loading anime.</p>';
+        }
+    }
+    
+    // पेज लोड होते ही इसे चला दें
+    fetchAnimeHTML();
+</script>
+
+    
 </body>
 </html>
