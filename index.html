@@ -130,6 +130,197 @@
     // पेज लोड होते ही इसे चला दें
     fetchAnimeHTML();
 </script>
+    <script>
+    // 1. SUPABASE CONNECTION
+    const supabaseUrl = 'https://maxalyasxiznqxmrzfzm.supabase.co';
+    const supabaseKey = 'sb_publishable_oWAYCI2tk-k3NyCJkXk9_g_9PB4SIlj';
+    let supabase = null;
+    try {
+        if (window.supabase) {
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            console.log("Supabase Connected Live! 🚀");
+        }
+    } catch (e) { console.log("DB Offline"); }
+
+    // 2. WATCHLIST STORAGE
+    let watchlist = [];
+    try { watchlist = JSON.parse(localStorage.getItem('animeWatchlist')) || []; } catch(e) {}
+
+    // 3. FETCH & DISPLAY ANIME (Crash-Proof)
+    async function loadTrendingAnime() {
+        const grid = document.getElementById('anime-grid');
+        if(!grid) return;
+        
+        try {
+            grid.innerHTML = '<p class="loading">Loading anime content... ⏳</p>';
+            const response = await fetch('https://api.jikan.moe/v4/top/anime');
+            const resData = await response.json();
+            
+            grid.innerHTML = '';
+            if (!resData.data || resData.data.length === 0) {
+                grid.innerHTML = '<p class="loading">No anime found.</p>';
+                return;
+            }
+
+            resData.data.forEach(anime => {
+                const card = document.createElement('div');
+                card.classList.add('anime-card');
+                const trailerUrl = anime.trailer && anime.trailer.embed_url ? anime.trailer.embed_url : 'null';
+
+                card.innerHTML = `
+                    <img src="${anime.images.jpg.image_url}" alt="Cover">
+                    <h4>${anime.title}</h4>
+                    <button class="play-btn">▶ Play Trailer</button>
+                    <button class="add-btn">＋ Add to List</button>
+                `;
+
+                // Safe Click Handlers inside HTML
+                card.querySelector('.play-btn').addEventListener('click', () => startVideo(trailerUrl, anime.title));
+                card.querySelector('.add-btn').addEventListener('click', () => addToList(anime.title));
+                
+                grid.appendChild(card);
+            });
+        } catch (error) {
+            grid.innerHTML = '<p class="loading" style="color:#ff4757;">Server is busy. Try searching manually! 🔍</p>';
+        }
+        refreshWatchlistUI();
+    }
+
+    // 4. SMART PLAYER LOGIC
+    window.startVideo = function(url, title) {
+        if (url === 'null' || !url) return alert("Sorry! No trailer available.");
+        
+        const playerSection = document.getElementById('player-section');
+        const iframePlayer = document.getElementById('video-player');
+        const playerTitle = document.getElementById('player-title');
+        
+        if(playerTitle) playerTitle.innerText = `Playing: ${title}`;
+        if(iframePlayer) {
+            iframePlayer.style.display = 'block';
+            iframePlayer.src = url;
+        }
+        if(playerSection) {
+            playerSection.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Load Comments
+        getLiveComments(title);
+        const commentArea = document.getElementById('comment-section');
+        if(commentArea) commentArea.style.display = 'none';
+        
+        // Save current video info globally for Likes/Comments
+        window.activeTitle = title;
+        window.activeUrl = url;
+    }
+
+    // Close Player Button Fix
+    document.getElementById('close-player')?.addEventListener('click', () => {
+        const playerSection = document.getElementById('player-section');
+        const iframePlayer = document.getElementById('video-player');
+        if(playerSection) playerSection.style.display = 'none';
+        if(iframePlayer) iframePlayer.src = '';
+    });
+
+    // 5. SEARCH ENGINE
+    document.getElementById('search-btn')?.addEventListener('click', () => {
+        const q = document.getElementById('search-input')?.value.trim();
+        const sectionTitle = document.getElementById('section-title');
+        if (q && sectionTitle) { 
+            sectionTitle.innerText = `🔍 Search: "${q}"`; 
+            const grid = document.getElementById('anime-grid');
+            grid.innerHTML = '<p class="loading">Searching... ⏳</p>';
+            fetch(`https://api.jikan.moe/v4/anime?q=${q}&limit=20`)
+                .then(res => res.json())
+                .then(resData => {
+                    // Reuse the display logic dynamically
+                    grid.innerHTML = '';
+                    resData.data.forEach(anime => {
+                        const card = document.createElement('div');
+                        card.classList.add('anime-card');
+                        const trailerUrl = anime.trailer && anime.trailer.embed_url ? anime.trailer.embed_url : 'null';
+                        card.innerHTML = `
+                            <img src="${anime.images.jpg.image_url}" alt="Cover">
+                            <h4>${anime.title}</h4>
+                            <button class="play-btn">▶ Play Trailer</button>
+                            <button class="add-btn">＋ Add to List</button>
+                        `;
+                        card.querySelector('.play-btn').addEventListener('click', () => startVideo(trailerUrl, anime.title));
+                        card.querySelector('.add-btn').addEventListener('click', () => addToList(anime.title));
+                        grid.appendChild(card);
+                    });
+                });
+        }
+    });
+
+    // 6. WATCHLIST SYSTEM
+    window.addToList = function(title) {
+        if (watchlist.length >= 100) return alert("Watchlist full!");
+        if (!watchlist.includes(title)) {
+            watchlist.push(title);
+            localStorage.setItem('animeWatchlist', JSON.stringify(watchlist));
+            refreshWatchlistUI();
+            alert(`"${title}" added!`);
+        } else { alert("Already in watchlist!"); }
+    }
+
+    window.deleteFromList = function(index) {
+        watchlist.splice(index, 1);
+        localStorage.setItem('animeWatchlist', JSON.stringify(watchlist));
+        refreshWatchlistUI();
+    }
+
+    function refreshWatchlistUI() {
+        const watchlistItems = document.getElementById('watchlist-items');
+        if(!watchlistItems) return;
+        watchlistItems.innerHTML = watchlist.length ? '' : '<li class="empty-msg">List is empty.</li>';
+        watchlist.forEach((title, i) => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${title}</span> <button class="remove-btn" onclick="deleteFromList(${i})">❌</button>`;
+            watchlistItems.appendChild(li);
+        });
+    }
+
+    // 7. LIVE COMMENTS (SUPABASE)
+    document.getElementById('comment-btn')?.addEventListener('click', () => {
+        const sec = document.getElementById('comment-section');
+        if(sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('submit-comment')?.addEventListener('click', async () => {
+        const input = document.getElementById('comment-input');
+        const btn = document.getElementById('submit-comment');
+        if(!input || !btn || !window.activeTitle) return;
+        const text = input.value.trim();
+        
+        if (text && supabase) {
+            btn.innerText = "⏳"; btn.disabled = true;
+            const { error } = await supabase.from('anime_comments').insert([{ video_title: window.activeTitle, comment_text: text }]);
+            if (!error) { input.value = ""; getLiveComments(window.activeTitle); }
+            btn.innerText = "Post"; btn.disabled = false;
+        }
+    });
+
+    async function getLiveComments(title) {
+        const list = document.getElementById('comment-list');
+        if(!list) return;
+        if (!supabase) return list.innerHTML = `<li>DB Offline</li>`;
+        list.innerHTML = `<li>Loading comments...</li>`;
+        const { data } = await supabase.from('anime_comments').select('*').eq('video_title', title).order('created_at', { ascending: false });
+        list.innerHTML = data && data.length ? data.map(r => `<li><strong>Guest:</strong> ${r.comment_text}</li>`).join('') : `<li>No comments yet.</li>`;
+    }
+
+    // 8. SIDEBAR, LIKE & MODAL UI
+    document.getElementById('toggle-watchlist')?.addEventListener('click', () => document.getElementById('watchlist-sidebar')?.classList.add('active'));
+    document.getElementById('close-sidebar-btn')?.addEventListener('click', () => document.getElementById('watchlist-sidebar')?.classList.remove('active'));
+    document.getElementById('feedback-btn')?.addEventListener('click', () => { const m = document.getElementById('feedback-modal'); if(m) m.style.display = 'flex'; });
+    document.getElementById('close-feedback')?.addEventListener('click', () => { const m = document.getElementById('feedback-modal'); if(m) m.style.display = 'none'; });
+    document.getElementById('feedback-form')?.addEventListener('submit', (e) => { e.preventDefault(); alert("Feedback sent! ❤️"); const m = document.getElementById('feedback-modal'); if(m) m.style.display = 'none'; });
+
+    // TRIGGER RUN
+    loadTrendingAnime();
+</script>
+
 
     
 </body>
