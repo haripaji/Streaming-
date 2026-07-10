@@ -1,96 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AnimeFun - Track, discover, and stream your favorite anime.">
-    <title>AnimeFun - Track & Discover Anime</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Mera Personal Video Player</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #ff4757;
+        }
+        .container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .main-player {
+            flex: 2;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        }
+        .main-player iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .playlist {
+            flex: 1;
+            background: #2f3542;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .playlist h3 {
+            margin-top: 0;
+            border-bottom: 2px solid #ff4757;
+            padding-bottom: 10px;
+        }
+        .video-item {
+            padding: 10px;
+            background: #57606f;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .video-item:hover {
+            background: #ff4757;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-    <header class="header">
-        <nav class="navbar">
-            <div class="logo">Anime<span class="highlight">Fun</span> 🎌</div>
-            <div class="search-box">
-                <input type="search" id="search-input" placeholder="Search anime (e.g., Naruto)..." autocomplete="off">
-                <button id="search-btn" class="search-btn">Search</button>
-            </div>
-        </nav>
-    </header>
 
-    <main class="container">
-        
-        <section class="banner-section">
-            <div class="banner-container">
-                <!-- lazy-load banner, set explicit height to avoid layout shift -->
-                <img src="https://raw.githubusercontent.com/haripaji/Streaming-/main/_.jpeg" alt="Featured anime banner" class="anime-banner-img" loading="lazy" width="1200" height="280">
-            </div>
-        </section>
+    <h1>🎬 Mera Personal Video Jukebox</h1>
 
-        <section class="player-section" id="player-section" style="display: none;">
-            <div class="player-wrapper">
-                <div class="video-container">
-                    <iframe id="video-player" src="" frameborder="0" allowfullscreen style="display: none;"></iframe>
-                    <!-- remove autoplay to avoid unnecessary buffering; preload metadata only -->
-                    <video id="local-video-player" controls preload="metadata" style="display: none; background: #000;"></video>
-                </div>
-                
-                <div class="player-controls">
-                    <h2 id="player-title">Anime Title</h2>
-                    <div class="action-buttons">
-                        <button id="like-btn" class="action-btn">🤍 Like</button>
-                        <button id="comment-btn" class="action-btn">💬 Comment</button>
-                    </div>
-                </div>
+    <div class="container">
+        <!-- Video Player Area -->
+        <div class="main-player">
+            <!-- Default pehle Doraemon chalega -->
+            <iframe id="videoPlayer" src="https://www.youtube.com/embed/5kMszbB_9B4" allowfullscreen></iframe>
+        </div>
 
-                <section id="comment-section" style="display: none;">
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="comment-input" placeholder="Write a live comment..." style="flex: 1; padding: 10px; border-radius: 5px;">
-                        <button id="submit-comment" style="padding: 10px 20px; background: #ff4757; color: white; border: none; border-radius: 5px; cursor: pointer;">Post</button>
-                    </div>
-                    <ul id="comment-list" style="margin-top: 15px; list-style: none;"></ul>
-                </section>
-
-                <button id="close-player" class="close-player-btn">✖ Close Player</button>
-            </div>
-        </section>
-
-        <section class="content-area" style="margin-top: 20px;">
-            <h2 class="section-title">📂 My Local Videos</h2>
-            <div class="anime-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
-                <div class="anime-card" style="background: #161b22; padding: 10px; border-radius: 8px; text-align: center;">
-                    <img src="https://images.unsplash.com/photo-1542204165-65bf26472b9b?w=300" alt="Local Thumbnail" loading="lazy" width="300" height="280" style="object-fit: cover; border-radius: 5px;">
-                    <h4 style="margin: 10px 0;">My First Project</h4>
-                    <!-- use data-attributes instead of inline onclicks -->
-                    <button class="play-btn" data-trailer="video1.mp4" data-title="My First Project" style="width: 100%; padding: 8px; background: #ff4757; color: white; border: none; border-radius: 4px;">Play</button>
-                    <button class="add-btn" data-title="My First Project" style="width: 100%; padding: 8px; background: #30363d; color: white; border: none; border-radius: 4px; margin-top: 8px;">＋ Add to List</button>
-                </div>
-            </div>
-        </section>
-
-        <section class="content-area" style="margin-top: 40px;">
-            <h2 id="section-title" class="section-title">🔥 Trending Anime</h2>
-            <div class="anime-grid" id="anime-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
-                <p class="loading">Loading trending anime... ⏳</p>
-            </div>
-        </section>
-
-    </main>
-
-    <div class="floating-actions">
-        <button id="toggle-watchlist" class="floating-btn">Watchlist</button>
+        <!-- Playlist Area -->
+        <div class="playlist">
+            <h3>My Playlist</h3>
+            
+            <!-- Doraemon Theme Song Link Added Here -->
+            <div class="video-item" onclick="changeVideo('https://www.youtube.com/embed/5kMszbB_9B4')">💙 Doraemon Title Song (Hindi)</div>
+            <div class="video-item" onclick="changeVideo('https://www.youtube.com/embed/tgbNymZ7vqY')">🐸 Funny Frog (YouTube)</div>
+            <div class="video-item" onclick="changeVideo('https://player.vimeo.com/video/76979871')">🌌 Space Video (Vimeo)</div>
+            
+        </div>
     </div>
 
-    <aside class="watchlist-sidebar" id="watchlist-sidebar">
-        <div class="watchlist-header">
-            <h3 style="color: white;">⭐ My Watchlist</h3>
-            <button id="close-sidebar-btn" class="close-sidebar">✖</button>
-        </div>
-        <ul id="watchlist-items" class="watchlist-items"></ul>
-    </aside>
+    <script>
+        function changeVideo(videoUrl) {
+            document.getElementById('videoPlayer').src = videoUrl;
+        }
+    </script>
 
-    <!-- load supabase first, then our script -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
 </body>
 </html>
